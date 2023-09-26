@@ -8,7 +8,7 @@ mod helpers;
 mod parse_args;
 mod gldf_helper;
 use gldf_helper::{cmd_signgldf, cmd_verifygldf};
-use std::io::{Write, Read};
+use std::io::{Write};
 use std::path::{Path, PathBuf};
 
 #[cfg(any(windows, unix))]

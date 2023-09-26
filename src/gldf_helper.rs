@@ -49,7 +49,7 @@ pub fn get_meta_information(gldf_file_buf:&FileBufGldf) -> Result<MetaInformatio
 pub fn cmd_signgldf<P, Q, R>(
     pk: Option<PublicKey>,
     sk_path: P,
-    signature_path: Q,
+    _signature_path: Q,
     data_path: R,
     trusted_comment: Option<&str>,
     untrusted_comment: Option<&str>,
@@ -112,7 +112,6 @@ pub fn cmd_signgldf<P, Q, R>(
         properties.push(property);
     }
 
-    let test = 1u8;
     let pk_base64 = pk.unwrap().to_base64();
     let property = Property {
         name: "gldf_rs_file_public_key".to_string(),
@@ -123,15 +122,15 @@ pub fn cmd_signgldf<P, Q, R>(
     let zip_path = std::path::Path::new(gldf_path);
     let zip_file = std::fs::File::create(zip_path).unwrap();
     let mut zip = zip::ZipWriter::new(zip_file);
-    zip.start_file("meta-information.xml", zip::write::FileOptions::default());
-    zip.write_all(meta_information.to_xml().unwrap().as_bytes())?;
+    let _ = zip.start_file("meta-information.xml", zip::write::FileOptions::default());
+    let _ = zip.write_all(meta_information.to_xml().unwrap().as_bytes())?;
     for a_file in gldf_filebufs.files.iter() {
         let path = a_file.clone().path.unwrap();
         let content = a_file.clone().content.unwrap();
-        zip.start_file(path, zip::write::FileOptions::default());
-        zip.write_all(&content);
+        let _ = zip.start_file(path, zip::write::FileOptions::default());
+        let _ = zip.write_all(&content);
     }
-    zip.finish();
+    let _ = zip.finish();
     // let mut zip = zip::ZipArchive::new(&mut data_reader);
     // OK so now write this into meta-information.xml
     Ok(())
@@ -158,7 +157,7 @@ pub fn cmd_verifygldf<P>(
             continue;
         }
         let content = a_file.clone().content.unwrap();
-        let property  = get_property(&meta_information,  &format!("gldf_rs_file_{}", path));;
+        let property  = get_property(&meta_information,  &format!("gldf_rs_file_{}", path));
         let property_value = match property {
             None => {
                 return Err(PError::new(
@@ -204,7 +203,6 @@ pub fn cmd_verifygldf<P>(
                 ));
             }
         }
-        let test = signature_box.unwrap();
     }
     Ok(())
 }
