@@ -17,12 +17,14 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            docker_image: debian:bullseye
           - os: macos-latest
             target: x86_64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
           - os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
+            docker_image: debian:bullseye
           - os: ubuntu-latest
             target: x86_64-unknown-freebsd
 
@@ -38,10 +40,10 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
-    - name: Build on Debian Bullseye for Linux ARM64
-      if: matrix.target == 'aarch64-unknown-linux-gnu'
+    - name: Build on Debian Bullseye
+      if: matrix.docker_image
       run: |
-        docker run --rm -v $(pwd):/workdir -w /workdir debian:bullseye bash -c "
+        docker run --rm -v $(pwd):/workdir -w /workdir ${{ matrix.docker_image }} bash -c "
         apt-get update &&
         apt-get install -y curl build-essential pkg-config libssl-dev &&
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y &&
@@ -51,7 +53,7 @@ jobs:
         "
 
     - name: Build
-      if: matrix.target != 'aarch64-unknown-linux-gnu'
+      if: matrix.os != 'ubuntu-latest'
       run: cargo build --release --target=${{ matrix.target }}
 
     - name: Run tests
