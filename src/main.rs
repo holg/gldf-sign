@@ -145,6 +145,7 @@ pub fn cmd_verify<P, Q>(
             ),
         )
     })?;
+
     let data_reader = open_data_file(&data_path).map_err(|err| {
         PError::new(
             ErrorKind::Io,
@@ -315,8 +316,17 @@ fn run(args: clap::ArgMatches, help_usage: &str) -> Result<()> {
             Some(PublicKey::from_base64(pk_inline)?)
         } else if let Some(pk_path) = sign_action.get_one::<String>("pk_path") {
             Some(PublicKey::from_file(get_pk_path(Some(pk_path))?)?)
+        // } else {
+        //     None
+        // };
+        // let pk = if let Some(pk_inline) = sign_action.get_one::<String>("public_key") {
+        //     PublicKey::from_base64(pk_inline)?
         } else {
-            None
+            Some(PublicKey::from_file(get_pk_path(
+                sign_action
+                    .get_one::<String>("pk_path")
+                    .map(|s| s.as_str()),
+            )?)?)
         };
         let data_path = PathBuf::from(sign_action.get_one::<String>("data").unwrap()); // safe to unwrap
         let signature_path = if let Some(file) = sign_action.get_one::<String>("sig_file") {
@@ -339,25 +349,11 @@ fn run(args: clap::ArgMatches, help_usage: &str) -> Result<()> {
             passwordless,
         )
     }else if let Some(verify_action) = args.subcommand_matches("verifygldf") {
-        let pk = if let Some(pk_inline) = verify_action.get_one::<String>("public_key") {
-            PublicKey::from_base64(pk_inline)?
-        } else {
-            PublicKey::from_file(get_pk_path(
-                verify_action
-                    .get_one::<String>("pk_path")
-                    .map(|s| s.as_str()),
-            )?)?
-        };
         let data_path = verify_action.get_one::<String>("gldffile").unwrap();
-        let signature_path = if let Some(path) = verify_action.get_one::<String>("sig_file") {
-            PathBuf::from(path)
-        } else {
-            PathBuf::from(format!("{data_path}{SIG_SUFFIX}"))
-        };
         let quiet = verify_action.get_flag("quiet");
         let output = verify_action.get_flag("output");
         let allow_legacy = verify_action.get_flag("allow-legacy");
-        cmd_verifygldf(pk, data_path, signature_path, quiet, output, allow_legacy)
+        cmd_verifygldf(data_path, quiet, output, allow_legacy)
     }else if let Some(verify_action) = args.subcommand_matches("verify") {
         let pk = if let Some(pk_inline) = verify_action.get_one::<String>("public_key") {
             PublicKey::from_base64(pk_inline)?

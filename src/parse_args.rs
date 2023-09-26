@@ -106,23 +106,6 @@ pub fn parse_args() -> (clap::ArgMatches, String) {
             Command::new("verifygldf")
                 .about("Verify a signed  GLDF file with a given public key")
                 .arg(
-                    Arg::new("public_key")
-                        .short('P')
-                        .long("public-key-string")
-                        .num_args(1)
-                        .value_name("PUBLIC_KEY_STRING")
-                        .conflicts_with("pk_path")
-                        .help("public key string"),
-                )
-                .arg(
-                    Arg::new("pk_path")
-                        .short('p')
-                        .long("public-key-path")
-                        .num_args(1)
-                        .value_name("PUBLIC_KEY_PATH")
-                        .help("path to public key file"),
-                )
-                .arg(
                     Arg::new("sig_file")
                         .short('x')
                         .long("sig-file")
@@ -237,7 +220,7 @@ pub fn parse_args() -> (clap::ArgMatches, String) {
                 ),
         ).subcommand(
             Command::new("signgldf")
-                .about("Sign a GLDF file with a given private key")
+                .about("Sign a GLDF file with a given private key and public key, to write into the GLDF meta-information file")
                 .arg(
                     Arg::new("public_key")
                         .short('P')
@@ -250,9 +233,9 @@ pub fn parse_args() -> (clap::ArgMatches, String) {
                 .arg(
                     Arg::new("pk_path")
                         .short('p')
-                        .long("public-key-file")
+                        .long("public-key-path")
                         .num_args(1)
-                        .value_name("PUBLIC_KEY_FILE")
+                        .value_name("PUBLIC_KEY_PATH")
                         .help("path to public key file"),
                 )
                 .arg(

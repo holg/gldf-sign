@@ -1,14 +1,27 @@
 extern crate minisign;
-use zip::{ZipWriter};
-use std::collections::HashMap;
 use std::io::{Write, Read, Cursor};
-use std::fs::{File, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::fs::{File};
+use std::path::{Path};
 use minisign::*;
 use gldf_rs::{GldfProduct, FileBufGldf};
 use gldf_rs::meta_information::{MetaInformation, Property};
 use crate::helpers::*;
-use regex::Regex;
+pub fn get_property(meta:&MetaInformation, name: &str) -> Option<Property> {
+    for property in meta.property.iter() {
+        if property.name == name {
+            return Some(property.clone());
+        }
+    }
+    None
+}
+
+pub fn check_ignore_path(path: &String) -> bool {
+    if path.starts_with("meta-information.xml")  || path.starts_with("__MACOSX"){
+        return true;
+    }else{
+        return false;
+    }
+}
 pub fn get_gldf_buf_all(gldf_path: &Path) -> Result<FileBufGldf>{
     let mut gldf_file = File::open(gldf_path).unwrap();
     let mut gldf_file_buf = Vec::new();
@@ -80,7 +93,7 @@ pub fn cmd_signgldf<P, Q, R>(
     };
     for a_file in gldf_filebufs.files.iter() {
         let path = a_file.clone().path.unwrap();
-        if path.starts_with("meta-information.xml") {
+        if check_ignore_path(&path) {
             continue;
         }
         let content = a_file.clone().content.unwrap();
@@ -103,7 +116,7 @@ pub fn cmd_signgldf<P, Q, R>(
     let pk_base64 = pk.unwrap().to_base64();
     let property = Property {
         name: "gldf_rs_file_public_key".to_string(),
-        property_text: format!("gldf_rs_public_key_{}", pk_base64),
+        property_text: format!("{}", pk_base64),
     };
     properties.push(property);
     meta_information.property = properties;
@@ -124,37 +137,50 @@ pub fn cmd_signgldf<P, Q, R>(
     Ok(())
 }
 
-pub fn cmd_verifygldf<P, Q>(
-    pk: PublicKey,
+pub fn cmd_verifygldf<P>(
     data_path: P,
-    signature_path: Q,
     quiet: bool,
     output: bool,
     allow_legacy: bool,
 ) -> Result<()>
     where
         P: AsRef<Path>,
-        Q: AsRef<Path>,
+
 {
-    let signature_box = SignatureBox::from_file(&signature_path).map_err(|err| {
-        PError::new(
-            ErrorKind::Io,
-            format!(
-                "could not read signature file {}: {}",
-                signature_path.as_ref().display(),
-                err
-            ),
-            )
-    })?;
-    let gldf_path = data_path.as_ref().to_str().unwrap();
     let gldf_filebufs = get_gldf_buf_all(data_path.as_ref())?;
-    let mut meta_information = get_meta_information(&gldf_filebufs)?;
+    let meta_information = get_meta_information(&gldf_filebufs)?;
+    let public_key = get_property(&meta_information,"gldf_rs_file_public_key").unwrap();
+    let pk = PublicKey::from_base64(&public_key.property_text).unwrap();
+
     for a_file in gldf_filebufs.files.iter() {
         let path = a_file.clone().path.unwrap();
-        if path.starts_with("meta-information.xml") {
+        if check_ignore_path(&path){
             continue;
         }
         let content = a_file.clone().content.unwrap();
+        let property  = get_property(&meta_information,  &format!("gldf_rs_file_{}", path));;
+        let property_value = match property {
+            None => {
+                return Err(PError::new(
+                    ErrorKind::Io,
+                    format!(
+                        "can't find signature for {}",
+                        path,
+                    ),
+                ));
+            }
+            _ => property.unwrap().property_text
+        };
+        let signature_box = SignatureBox::from_string(&property_value).map_err(|err| {
+            PError::new(
+                ErrorKind::Io,
+                format!(
+                    "could not read signature string {}: {}",
+                    property_value.as_str(),
+                    err
+                ),
+            )
+        })?;
         let signature_box = verify(
             &pk,
             &signature_box,
@@ -163,15 +189,23 @@ pub fn cmd_verifygldf<P, Q>(
             output,
             allow_legacy
         );
+        match signature_box {
+            Ok(_) => {
+                println!("OK");
+            }
+            Err(err) => {
+                return Err(PError::new(
+                    ErrorKind::Io,
+                    format!(
+                        "could not verify signature {}: {}",
+                        property_value.as_str(),
+                        err
+                    ),
+                ));
+            }
+        }
+        let test = signature_box.unwrap();
     }
     Ok(())
-    // verify(
-    //     &pk,
-    //     &signature_box,
-    //     data_reader,
-    //     quiet,
-    //     output,
-    //     allow_legacy,
-    // )
 }
 
