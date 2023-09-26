@@ -2,18 +2,19 @@
 name = "gldf-sign"
 version = "0.1.0"
 edition = "2021"
-author = ["Holger Trahe <trahe@mac.com>"]
-description = "A command-line tool to sign GLDF files and verify GLDF signatures."
-license = "MIT"
-readme = "README.md"
+authors = ["Holger Trahe <trahe@mac.com>"]
+readme = "README"
 categories = ["command-line-utilities", "gldf", "gldf-rs", "cryptography"]
 keywords = ["command-line", "publickey", "cryptography", "minisign", "gldf"]
+description = "A command-line tool to sign GLDF files and verify GLDF signatures, based on minisign."
 repository = "https://github.com/holg/gldf-sign"
+homepage = "https://github.com/holg/gldf-sign"
+license = "GPL-3.0-or-later"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#gldf-rs = "0.2.2"
-gldf-rs = { path = "../gldf-rs" }
+gldf-rs = "0.2.2"
+#gldf-rs = { path = "../gldf-rs" }
 clap = { version = "4.4.4", features = ["std", "cargo", "wrap_help", "string"] }
 minisign = "0.7"
 dirs = "5.0"
